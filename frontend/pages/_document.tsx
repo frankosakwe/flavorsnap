@@ -1,11 +1,14 @@
 import { Html, Head, Main, NextScript } from "next/document";
+import type { DocumentProps } from "next/document";
 
-export default function Document() {
+const rtlLocales = ["ar"];
+
+export default function Document(props: DocumentProps) {
+  const locale = props.__NEXT_DATA__?.locale || "en";
+  const dir = rtlLocales.includes(locale) ? "rtl" : "ltr";
+
   return (
-    <Html lang="en">
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="FlavorSnap - AI-powered Nigerian food recognition and recipe discovery" />
+
       </Head>
       <body className="antialiased">
         <div id="skip-to-content">

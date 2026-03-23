@@ -3,37 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:a11y": "pa11y-ci --sitemap http://localhost:3000/sitemap.xml",
-    "test:a11y:ci": "pa11y-ci --sitemap http://localhost:3000/sitemap.xml --threshold 0"
+
   },
   "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
+    "@tanstack/react-query": "^5.90.21",
+    "i18next": "^25.8.13",
+    "next": "15.3.3",
+    "next-i18next": "^15.4.3",
+    "onnxruntime-node": "^1.24.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.3",
-    "recharts": "^2.12.7",
-    "lucide-react": "^0.447.0",
-    "date-fns": "^3.6.0",
-    "@tanstack/react-query": "^5.51.1",
-    "axios": "^1.7.2"
+
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "@eslint/eslintrc": "^3",
-    "pa11y-ci": "^3.0.1",
-    "axe-core": "^4.8.2",
-    "@axe-core/react": "^4.8.2",
-    "eslint-plugin-jsx-a11y": "^6.8.0",
-    "eslint-plugin-react-hooks": "^4.6.0"
+
   }
 }
