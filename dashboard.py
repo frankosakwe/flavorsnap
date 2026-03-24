@@ -1,84 +1,79 @@
-from src.ui import theme_manager, ImageViewer
+from src.ui import theme_manager, ImageViewer, LoadingUI, SkeletonCard
+from src.core import ProgressClassifier
 import panel as pn
 import torch
-import torchvision.transforms as transforms
-from torchvision import models
 from PIL import Image
 import io
 import os
+import time
 
 # Configure Panel Extension and Theme Integration
 theme_manager.apply_to_app()
 pn.extension(
-    css_files=['static/css/image_viewer.css'],
-    js_files={'image_viewer': 'static/js/image_viewer.js'}
+    css_files=['static/css/image_viewer.css', 'static/css/loading.css'],
+    js_files={
+        'image_viewer': 'static/js/image_viewer.js',
+        'progress_tracker': 'static/js/progress_tracker.js'
+    }
 )
 
-# Load model
-model_path = 'models/best_model.pth'
-class_names = ['Akara', 'Bread', 'Egusi', 'Moi Moi', 'Rice and Stew', 'Yam']
-model = models.resnet18(weights='IMAGENET1K_V1')
-model.fc = torch.nn.Linear(model.fc.in_features, len(class_names))
-model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-model.eval()
+# Load Model using Core Classifier
+classifier = ProgressClassifier()
 
-# Transforms
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-])
-
-# Save image to correct folder
+# Save image function
 def save_image(image_obj, predicted_class, image_name="uploaded_image.jpg"):
     save_dir = f"data/train/{predicted_class}"
     os.makedirs(save_dir, exist_ok=True)
     image_path = os.path.join(save_dir, image_name)
     image_obj.save(image_path)
 
-# Panel UI Components
+# UI Components
 image_input = pn.widgets.FileInput(accept='image/*')
 output = pn.pane.Markdown("Upload an image of food 🍲")
 image_preview = ImageViewer(visible=False)
-spinner = pn.indicators.LoadingSpinner(value=False, width=50)
+loading_overlay = LoadingUI(visible=False)
 
-# Theme Toggle from ThemeManager
+# Theme Toggle
 theme_toggle = theme_manager.get_header_toggle_btn()
+
+def update_progress(percent, message):
+    loading_overlay.progress = percent
+    loading_overlay.message = message
+    time.sleep(0.1)  # small pause to yield thread for UI updates
 
 def classify(event=None):
     if image_input.value is None:
         output.object = "⚠️ Please upload an image first."
         image_preview.visible = False
         return
+    
     try:
-        image = Image.open(io.BytesIO(image_input.value)).convert('RGB')
+        loading_overlay.visible = True
+        output.object = "⏳ Starting analysis..."
+        
+        # Run classification with progress updates
+        predicted_class, image = classifier.classify_with_progress(
+            image_input.value, 
+            progress_callback=update_progress
+        )
 
         # Update preview
         image_preview.object = image
         image_preview.visible = True
 
-        # Start spinner
-        spinner.value = True
-        output.object = "🔍 Classifying..."
-
-        # Transform and predict
-        img_tensor = transform(image).unsqueeze(0)
-        with torch.no_grad():
-            outputs = model(img_tensor)
-            _, pred = torch.max(outputs, 1)
-            predicted_class = class_names[pred.item()]
-
-        # Save image
+        # Save result
         save_image(image, predicted_class)
-        output.object = f"✅ Identified as **{predicted_class}**. Image saved!"
+        output.object = f"✅ Identified as **{predicted_class}**. Result saved!"
+        
     except Exception as e:
         output.object = f"❌ Error: {str(e)}"
     finally:
-        spinner.value = False
+        loading_overlay.visible = False
 
-run_button = pn.widgets.Button(name='Classify', button_type='primary')
+run_button = pn.widgets.Button(name='Classify Dish 🍽️', button_type='primary', height=45)
 run_button.on_click(classify)
 
-# Header Section
+# Header
 header = pn.Row(
     pn.pane.Markdown("# 🍽️ FlavorSnap", styles={'margin-top': '0px', 'flex': '1'}),
     theme_toggle,
@@ -86,18 +81,35 @@ header = pn.Row(
     css_classes=['header']
 )
 
-# Dashboard Layout
-app = pn.Column(
-    header,
-    pn.layout.Divider(),
-    pn.pane.Markdown("Upload an image and click the button to classify your food! 🥗", styles={'font-size': '1.1rem'}),
+# Main Dashboard Area
+dashboard_body = pn.Column(
+    pn.pane.Markdown("### Upload an image and let FlavorSnap identify it in seconds. 🥗", styles={'font-size': '1.1rem'}),
     pn.Row(
-        pn.Column(image_input, run_button, spinner),
-        pn.Column(image_preview, output),
+        pn.Column(
+            pn.pane.Markdown("#### Controls"),
+            image_input, 
+            run_button,
+            loading_overlay, # Component for loading overlay
+            width=300
+        ),
+        pn.Column(
+            pn.pane.Markdown("#### Preview & Results"),
+            image_preview, 
+            output,
+            sizing_mode='stretch_width'
+        ),
         sizing_mode='stretch_width'
     ),
     sizing_mode='stretch_width',
     css_classes=['dashboard-container']
+)
+
+# App Assembly
+app = pn.Column(
+    header,
+    pn.layout.Divider(),
+    dashboard_body,
+    sizing_mode='stretch_width'
 )
 
 app.servable()
