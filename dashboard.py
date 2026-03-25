@@ -171,4 +171,16 @@ app = pn.Column(
     sizing_mode='stretch_width'
 )
 
+app = pn.Row(
+    pn.Column(
+        upload_section,
+        preview_section,
+        classification_section,
+        sizing_mode='stretch_width',
+        max_width=600,
+    ),
+    controls_section,
+    sizing_mode='stretch_width',
+)
+
 app.servable()
